@@ -6,11 +6,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.spacex20.feature_launches.core.util.Resource
 import com.example.spacex20.feature_launches.domain.use_case.get_launches.GetLaunchesUseCase
+import com.example.spacex20.feature_launches.presentation.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -21,8 +21,8 @@ class LaunchListViewModel @Inject constructor(
     private val _state = mutableStateOf(LaunchListState())
     val state: State<LaunchListState> = _state
 
-    private val _eventFlow = MutableSharedFlow<UIEvent>()
-    val eventFlow = _eventFlow.asSharedFlow()
+    private val _uiEvent = Channel<UiEvent>()
+    val uiEvent = _uiEvent.receiveAsFlow()
 
     init {
         getLaunches()
@@ -36,24 +36,28 @@ class LaunchListViewModel @Inject constructor(
                         launches = result.data ?: emptyList(),
                         isLoading = true
                     )
-                    _eventFlow.emit(UIEvent.ShowSnackBar(
-                        result.message ?: "Something went wrong"
-                    ))
                 }
                 is Resource.Success -> {
-                    _state.value = LaunchListState(launches = result.data ?: emptyList())
+                    _state.value = LaunchListState(
+                        launches = result.data ?: emptyList()
+                    )
                 }
                 is Resource.Error -> {
-                    _state.value = LaunchListState(launches = result.data ?: emptyList())
-                    _eventFlow.emit(UIEvent.ShowSnackBar(
-                        result.message ?: "Something went wrong"
+                    _state.value = LaunchListState(
+                        error = result.message ?: "Something went wrong",
+                        launches = result.data ?: emptyList()
+                    )
+                    sendUiEvent(UiEvent.ShowSnackBar(
+                        message = "No internet connection"
                     ))
                 }
             }
         }.launchIn(viewModelScope)
     }
 
-    sealed class UIEvent {
-        data class ShowSnackBar(val message: String) : UIEvent()
+    private fun sendUiEvent(event: UiEvent) {
+        viewModelScope.launch {
+            _uiEvent.send(event)
+        }
     }
 }

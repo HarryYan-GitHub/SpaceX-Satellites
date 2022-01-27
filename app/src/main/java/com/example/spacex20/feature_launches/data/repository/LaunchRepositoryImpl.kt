@@ -27,17 +27,17 @@ class LaunchRepositoryImpl(
             dao.insertLaunches(remoteLaunches.map { it.toLaunchEntity() })
         } catch (e: HttpException) {
             emit(Resource.Error(
-                data = launches,
-                message = e.localizedMessage ?: "Something went wrong"
+                message = "Something went wrong",
+                data = launches
             ))
         } catch (e: IOException) {
             emit(Resource.Error(
-                data = launches,
-                message = "Couldn't reach to the server, check your internet connection"
+                message = "Couldn't reach to the server, check your internet connection",
+                data = launches
             ))
         }
 
-        val newLaunches = dao.getLaunches()
-        emit(Resource.Success(data = newLaunches.map { it.toLaunch() }))
+        val newLaunches = dao.getLaunches().map { it.toLaunch() }
+        emit(Resource.Success(data = newLaunches))
     }
 }
