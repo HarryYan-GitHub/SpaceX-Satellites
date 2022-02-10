@@ -1,11 +1,13 @@
 package com.example.spacex20.feature_launches.presentation.launch_list
 
+import android.content.Context
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.spacex20.feature_launches.core.util.Resource
 import com.example.spacex20.feature_launches.domain.use_case.get_launches.GetLaunchesUseCase
+import com.example.spacex20.feature_launches.domain.utils.makeNotification
 import com.example.spacex20.feature_launches.presentation.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -15,6 +17,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LaunchListViewModel @Inject constructor(
+    private val context: Context,
     private val getLaunchesUseCase: GetLaunchesUseCase
 ) : ViewModel() {
 
@@ -25,6 +28,7 @@ class LaunchListViewModel @Inject constructor(
     val uiEvent = _uiEvent.receiveAsFlow()
 
     init {
+        makeNotification("Syncing with network", context.applicationContext)
         getLaunches()
     }
 
@@ -47,9 +51,11 @@ class LaunchListViewModel @Inject constructor(
                         error = result.message ?: "Something went wrong",
                         launches = result.data ?: emptyList()
                     )
-                    sendUiEvent(UiEvent.ShowSnackBar(
-                        message = "No internet connection"
-                    ))
+                    viewModelScope.launch {
+                        sendUiEvent(UiEvent.ShowSnackBar(
+                            message = "No internet connection"
+                        ))
+                    }
                 }
             }
         }.launchIn(viewModelScope)

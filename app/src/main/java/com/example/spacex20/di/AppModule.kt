@@ -1,6 +1,7 @@
 package com.example.spacex20.di
 
 import android.app.Application
+import android.content.Context
 import androidx.room.Room
 import com.example.spacex20.feature_launches.core.common.Constants
 import com.example.spacex20.feature_launches.data.datasource.local.LaunchDatabase
@@ -21,6 +22,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+
+    @Provides
+    @Singleton
+    fun provideContext(app: Application): Context {
+        return app.applicationContext
+    }
 
     @Provides
     @Singleton
